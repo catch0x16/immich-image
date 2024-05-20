@@ -12,7 +12,7 @@ from homeassistant.exceptions import HomeAssistantError
 _HEADER_API_KEY = "x-api-key"
 _LOGGER = logging.getLogger(__name__)
 
-_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg"]
+_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/heic"]
 
 @dataclass
 class ImmichImage:
