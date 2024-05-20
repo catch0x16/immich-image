@@ -1,0 +1,17 @@
+{
+    "domain": "immich_image",
+    "name": "Immich Image",
+    "issue_tracker": "https://github.com/catch0x16/immich-image/issues",
+    "documentation": "https://github.com/catch0x16/immich-image",
+    "dependencies": ["http"],
+    "config_flow": true,
+    "codeowners": [
+      "@catch0x16"
+    ],
+    "requirements": [
+      "url_normalize"
+    ],
+    "zeroconf": [],
+    "version": "0.1",
+    "iot_class": "local_polling"
+  }
