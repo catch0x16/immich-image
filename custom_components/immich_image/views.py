@@ -1,4 +1,5 @@
 """The immich image view integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,12 +7,15 @@ from contextlib import suppress
 from dataclasses import dataclass
 
 from homeassistant.components.http import KEY_AUTHENTICATED, KEY_HASS, HomeAssistantView
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.entity_component import EntityComponent
+
 from aiohttp import hdrs, web
 
-from .const import IMAGE_TIMEOUT
-from .hub import ImmichHub
+from .const import IMAGE_TIMEOUT, DOMAIN
+from .hub import ImmichHub, ImmichImage
+
 
 @dataclass
 class Image:
@@ -19,6 +23,7 @@ class Image:
 
     content_type: str
     content: bytes
+
 
 class ImageContentTypeError(HomeAssistantError):
     """Error with the content type while loading an image."""
@@ -38,16 +43,19 @@ class ImmichImageView(HomeAssistantView):
     name = "api:immich-image:image"
     requires_auth = False
 
-    hub: ImmichHub
+    component: EntityComponent[ImmichImage]
 
-    def __init__(self, hub) -> None:
+    def __init__(self, component) -> None:
         """Initialize an image view."""
-        self.hub = hub
+        self.component = component
 
-    async def get(self, request: web.Request, entity_id: str, asset_id: str) -> web.StreamResponse:
+    async def get(
+        self, request: web.Request, entity_id: str, asset_id: str
+    ) -> web.StreamResponse:
         """Start a GET request."""
-        # if (image_entity := self.component.get_entity(entity_id)) is None:
-        #     raise web.HTTPNotFound
+        image_entity = self.component.get_entity(entity_id)
+        if image_entity is None:
+            raise web.HTTPNotFound
 
         # authenticated = (
         #     request[KEY_AUTHENTICATED]
@@ -55,12 +63,12 @@ class ImmichImageView(HomeAssistantView):
         # )
 
         # if not authenticated:
-            # Attempt with invalid bearer token, raise unauthorized
-            # so ban middleware can handle it.
-            # if hdrs.AUTHORIZATION in request.headers:
-                # raise web.HTTPUnauthorized
-            # Invalid sigAuth or image entity access token
-            # raise web.HTTPForbidden
+        # Attempt with invalid bearer token, raise unauthorized
+        # so ban middleware can handle it.
+        # if hdrs.AUTHORIZATION in request.headers:
+        # raise web.HTTPUnauthorized
+        # Invalid sigAuth or image entity access token
+        # raise web.HTTPForbidden
 
         return await self.handle(request, entity_id, asset_id)
 
