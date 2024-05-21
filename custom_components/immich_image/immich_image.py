@@ -113,6 +113,7 @@ class ImmichImageEntity(Entity):
 
         # Select random item in list
         self._asset_id = random.choice(self._asset_ids)
+        self._asset_id_last_updated = datetime.now()
 
     async def async_load_image(self, asset_id: str, timeout: int) -> ImmichImage:
         """Download and cache the image."""
