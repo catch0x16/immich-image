@@ -47,7 +47,7 @@ class ImmichImageEntity(Entity):
     """The base class for image entities."""
 
     _entity_component_unrecorded_attributes = frozenset(
-        {"asset_id", "asset_ids"}
+        {"asset_id", "asset_ids", "image_url"}
     )
 
     # We want to get a new image every so often, as defined by the refresh interval
@@ -56,6 +56,7 @@ class ImmichImageEntity(Entity):
 
     # Entity Properties
     _asset_id: str = None
+    _image_url: str = None
     _asset_id_last_updated: datetime | None = None
     _attr_state: None = None  # State is determined by last_updated
 
@@ -81,7 +82,7 @@ class ImmichImageEntity(Entity):
     @property
     def state_attributes(self) -> dict[str, str | None]:
         """Return the state attributes."""
-        return {"asset_id": self._asset_id, "asset_ids": ",\n".join(self._asset_ids)}
+        return {"asset_id": self._asset_id, "asset_ids": ",\n".join(self._asset_ids), "image_url": ENTITY_IMAGE_URL.format(self.entity_id, self._asset_id)}
 
     async def async_update(self) -> None:
         """Force a refresh of the image."""
