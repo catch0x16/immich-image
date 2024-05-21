@@ -18,6 +18,7 @@ _ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/heic"]
 class ImmichImage:
     """Represent an image."""
 
+    asset_id: str
     content_type: str
     content: bytes
 
@@ -93,7 +94,7 @@ class ImmichHub:
                         return None
 
                     content = await response.read()
-                    return ImmichImage(response.content_type, content)
+                    return ImmichImage(asset_id, response.content_type, content)
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception

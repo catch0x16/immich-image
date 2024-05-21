@@ -13,9 +13,9 @@ from homeassistant.helpers.entity_component import EntityComponent
 
 from aiohttp import hdrs, web
 
-from .const import IMAGE_TIMEOUT, DOMAIN
-from .hub import ImmichHub, ImmichImage
+from custom_components.immich_image.immich_image import ImmichImageEntity
 
+from .const import IMAGE_TIMEOUT
 
 @dataclass
 class Image:
@@ -24,10 +24,8 @@ class Image:
     content_type: str
     content: bytes
 
-
 class ImageContentTypeError(HomeAssistantError):
     """Error with the content type while loading an image."""
-
 
 def valid_image_content_type(content_type: str | None) -> str:
     """Validate the assigned content type is one of an image."""
@@ -43,7 +41,7 @@ class ImmichImageView(HomeAssistantView):
     name = "api:immich-image:image"
     requires_auth = False
 
-    component: EntityComponent[ImmichImage]
+    component: EntityComponent[ImmichImageEntity]
 
     def __init__(self, component) -> None:
         """Initialize an image view."""
@@ -70,25 +68,23 @@ class ImmichImageView(HomeAssistantView):
         # Invalid sigAuth or image entity access token
         # raise web.HTTPForbidden
 
-        return await self.handle(request, entity_id, asset_id)
+        return await self.handle(request, image_entity, asset_id)
 
     async def handle(
-        self, request: web.Request, entity_id: str, asset_id: str
+        self, request: web.Request, image_entity: ImmichImageEntity, asset_id: str
     ) -> web.StreamResponse:
         """Serve image."""
         try:
-            image = await self._async_get_image(asset_id, IMAGE_TIMEOUT)
+            image = await self._async_get_image(image_entity, asset_id, IMAGE_TIMEOUT)
         except (HomeAssistantError, ValueError) as ex:
             raise web.HTTPInternalServerError from ex
 
         return web.Response(body=image.content, content_type=image.content_type)
 
-    async def _async_get_image(self, asset_id: str, timeout: int) -> Image:
+    async def _async_get_image(self, image_entity: ImmichImageEntity, asset_id: str, timeout: int) -> Image:
         """Fetch image from an image entity."""
         with suppress(asyncio.CancelledError, TimeoutError, ImageContentTypeError):
-            async with asyncio.timeout(timeout):
-                if image := await self.hub.download_asset(asset_id):
-                    content_type = valid_image_content_type(image.content_type)
-                    return Image(content_type, image.content)
+            if image := await image_entity.async_load_image(asset_id, timeout):
+                return image
 
         raise HomeAssistantError("Unable to get image")
