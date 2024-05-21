@@ -111,8 +111,12 @@ class ImmichImageEntity(Entity):
             _LOGGER.error("No assets are available")
             return None
 
+        next_asset_id = self._asset_id
+        while next_asset_id == self._asset_id:
+            next_asset_id = random.choice(self._asset_ids)
+
         # Select random item in list
-        self._asset_id = random.choice(self._asset_ids)
+        self._asset_id = next_asset_id
         self._asset_id_last_updated = datetime.now()
 
     async def async_load_image(self, asset_id: str, timeout: int) -> ImmichImage:
