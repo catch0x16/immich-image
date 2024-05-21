@@ -72,11 +72,13 @@ class ImmichImageEntity(Entity):
         self._client = get_async_client(hass, verify_ssl=verify_ssl)
         self.hub = hub
 
-    @final
     @property
+    @final
     def state(self) -> str | None:
         """Return the state."""
-        return self._asset_id_last_updated
+        if self._asset_id_last_updated is None:
+            return None
+        return self._asset_id_last_updated.isoformat()
 
     @final
     @property
