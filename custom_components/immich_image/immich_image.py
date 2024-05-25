@@ -61,7 +61,7 @@ class ImmichImageEntity(Entity):
     _asset_ids: list[str] | None = []
     _asset_ids_last_updated: datetime | None = None
 
-    _asset_id_hash: str | None
+    _asset_id_hash: str | None = None
 
     _cached_images: dict[str, ImmichImage] = {}
 
