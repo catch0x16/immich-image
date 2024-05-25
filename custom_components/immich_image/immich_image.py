@@ -88,7 +88,7 @@ class ImmichImageEntity(Entity):
     def calculate_hash(self) -> str:
         m = hashlib.sha256()
         for asset_id in self._asset_ids:
-            m.update(asset_id)
+            m.update(asset_id.encode("utf-8"))
         return m.hexdigest()
 
     async def async_update(self) -> None:
