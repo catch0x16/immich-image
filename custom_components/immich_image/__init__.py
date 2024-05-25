@@ -14,7 +14,7 @@ from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.helpers.entity_component import EntityComponent
 
 from custom_components.immich_image.views import ImmichImageView
-from .const import DOMAIN, CONF_HUBS
+from .const import DOMAIN
 from .hub import ImmichHub, InvalidAuth
 from .immich_image import ImmichImage
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import final
 import logging
+import hashlib
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_HOST
@@ -60,6 +61,8 @@ class ImmichImageEntity(Entity):
     _asset_ids: list[str] | None = []
     _asset_ids_last_updated: datetime | None = None
 
+    _asset_id_hash: str | None
+
     _cached_images: dict[str, ImmichImage] = {}
 
     hub: ImmichHub
@@ -73,9 +76,7 @@ class ImmichImageEntity(Entity):
     @final
     def state(self) -> str | None:
         """Return the state."""
-        if self._asset_id_last_updated is None:
-            return None
-        return self._asset_id_last_updated.isoformat()
+        return self._asset_id_hash
 
     @final
     @property
@@ -83,6 +84,12 @@ class ImmichImageEntity(Entity):
         """Return the state attributes."""
         image_urls = [ENTITY_IMAGE_URL.format(self.entity_id, asset_id) for asset_id in self._asset_ids]
         return {"image_urls":  ",".join(image_urls)}
+
+    def calculate_hash(self) -> str:
+        m = hashlib.sha256()
+        for asset_id in self._asset_ids:
+            m.update(asset_id)
+        return m.hexdigest()
 
     async def async_update(self) -> None:
         if (
@@ -93,6 +100,7 @@ class ImmichImageEntity(Entity):
             # If we don't have any available asset IDs yet, or the list is stale, refresh it
             _LOGGER.debug("Refreshing asset Ids")
             self._asset_ids = await self._refresh_asset_ids()
+            self._asset_id_hash = self.calculate_hash()
             self._asset_ids_last_updated = datetime.now()
 
         if not self._asset_ids:
