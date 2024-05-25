@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from typing import final
-import random
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -55,8 +54,6 @@ class ImmichImageEntity(Entity):
     _attr_has_entity_name = True
 
     # Entity Properties
-    _asset_id: str = None
-    _image_url: str = None
     _asset_id_last_updated: datetime | None = None
     _attr_state: None = None  # State is determined by last_updated
 
@@ -84,18 +81,10 @@ class ImmichImageEntity(Entity):
     @property
     def state_attributes(self) -> dict[str, str | None]:
         """Return the state attributes."""
-        return {"asset_id": self._asset_id, "asset_ids": ",\n".join(self._asset_ids), "image_url": ENTITY_IMAGE_URL.format(self.entity_id, self._asset_id)}
+        image_urls = [ENTITY_IMAGE_URL.format(self.entity_id, asset_id) for asset_id in self._asset_ids]
+        return {"image_urls":  ",".join(image_urls)}
 
     async def async_update(self) -> None:
-        """Force a refresh of the image."""
-        await self._select_next_asset_id()
-
-    async def _refresh_asset_ids(self) -> list[str] | None:
-        """Refresh the list of available asset IDs."""
-        raise NotImplementedError
-
-    async def _select_next_asset_id(self) -> str | None:
-        """Get the asset id of the next image we want to display."""
         if (
             not self._asset_ids_last_updated
             or (datetime.now() - self._asset_ids_last_updated)
@@ -111,13 +100,9 @@ class ImmichImageEntity(Entity):
             _LOGGER.error("No assets are available")
             return None
 
-        next_asset_id = self._asset_id
-        while next_asset_id == self._asset_id:
-            next_asset_id = random.choice(self._asset_ids)
-
-        # Select random item in list
-        self._asset_id = next_asset_id
-        self._asset_id_last_updated = datetime.now()
+    async def _refresh_asset_ids(self) -> list[str] | None:
+        """Refresh the list of available asset IDs."""
+        raise NotImplementedError
 
     async def async_load_image(self, asset_id: str, timeout: int) -> ImmichImage:
         """Download and cache the image."""
