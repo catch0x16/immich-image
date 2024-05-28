@@ -83,7 +83,8 @@ class ImmichImageView(HomeAssistantView):
             image = await self._async_get_image(image_entity, asset_id, IMAGE_TIMEOUT)
         except (HomeAssistantError, ValueError) as ex:
             raise web.HTTPInternalServerError from ex
-        
+
+        # https://imagekit.io/blog/ultimate-guide-to-http-caching-for-static-assets/
         headers = {
             "Content-Type": image.content_type,
             "Expires": "-1",
