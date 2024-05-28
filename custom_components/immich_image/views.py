@@ -72,16 +72,17 @@ class ImmichImageView(HomeAssistantView):
             raise web.HTTPInternalServerError from ex
 
         # https://imagekit.io/blog/ultimate-guide-to-http-caching-for-static-assets/
-        currentETag = request.headers['If-None-Match']
-        if image.etag == currentETag:
-            return web.Response(status=304)
-        else:
-            headers = {
-                "Content-Type": image.content_type,
-                "Expires": "-1",
-                "ETag": image.etag,
-            }
-            return web.Response(status=200, body=image.content, headers=headers)
+        if 'If-None-Match' in request.headers:
+            currentETag = request.headers['If-None-Match']
+            if image.etag == currentETag:
+                return web.Response(status=304)
+
+        headers = {
+            "Content-Type": image.content_type,
+            "Expires": "-1",
+            "ETag": image.etag,
+        }
+        return web.Response(status=200, body=image.content, headers=headers)
 
     async def _async_get_image(self, image_entity: ImmichImageEntity, asset_id: str, timeout: int) -> ImmichImage:
         """Fetch image from an image entity."""
