@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import hashlib
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
@@ -21,6 +22,12 @@ class ImmichImage:
     asset_id: str
     content_type: str
     content: bytes
+    etag: str
+
+def calculate_etag(value: bytes) -> str:
+    m = hashlib.sha256()
+    m.update(value)
+    return m.hexdigest()
 
 class ImmichHub:
     """Immich API hub."""
@@ -94,7 +101,8 @@ class ImmichHub:
                         return None
 
                     content = await response.read()
-                    return ImmichImage(asset_id, response.content_type, content)
+                    etag = calculate_etag(content)
+                    return ImmichImage(asset_id, response.content_type, content, etag)
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception

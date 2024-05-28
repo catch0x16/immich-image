@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import suppress
-from dataclasses import dataclass
-import hashlib
 
 from homeassistant.components.http import KEY_AUTHENTICATED, KEY_HASS, HomeAssistantView
 from homeassistant.core import HomeAssistant
@@ -14,16 +12,10 @@ from homeassistant.helpers.entity_component import EntityComponent
 
 from aiohttp import hdrs, web
 
+from custom_components.immich_image.hub import ImmichImage
 from custom_components.immich_image.immich_image import ImmichImageEntity
 
 from .const import IMAGE_TIMEOUT
-
-@dataclass
-class Image:
-    """Represent an image."""
-
-    content_type: str
-    content: bytes
 
 class ImageContentTypeError(HomeAssistantError):
     """Error with the content type while loading an image."""
@@ -33,11 +25,6 @@ def valid_image_content_type(content_type: str | None) -> str:
     if content_type is None or content_type.split("/", 1)[0] != "image":
         raise ImageContentTypeError
     return content_type
-
-def calculate_hash(value: bytes) -> str:
-    m = hashlib.sha256()
-    m.update(value)
-    return m.hexdigest()
 
 class ImmichImageView(HomeAssistantView):
     """Get all logged errors and warnings."""
@@ -85,15 +72,18 @@ class ImmichImageView(HomeAssistantView):
             raise web.HTTPInternalServerError from ex
 
         # https://imagekit.io/blog/ultimate-guide-to-http-caching-for-static-assets/
-        headers = {
-            "Content-Type": image.content_type,
-            "Expires": "-1",
-            "ETag": calculate_hash(image.content),
-        }
+        currentETag = request.headers['If-None-Match']
+        if image.etag == currentETag:
+            return web.Response(status=304)
+        else:
+            headers = {
+                "Content-Type": image.content_type,
+                "Expires": "-1",
+                "ETag": image.etag,
+            }
+            return web.Response(status=200, body=image.content, headers=headers)
 
-        return web.Response(body=image.content, headers=headers)
-
-    async def _async_get_image(self, image_entity: ImmichImageEntity, asset_id: str, timeout: int) -> Image:
+    async def _async_get_image(self, image_entity: ImmichImageEntity, asset_id: str, timeout: int) -> ImmichImage:
         """Fetch image from an image entity."""
         with suppress(asyncio.CancelledError, TimeoutError, ImageContentTypeError):
             if image := await image_entity.async_load_image(asset_id, timeout):
