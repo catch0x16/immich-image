@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
+import hashlib
 
 from homeassistant.components.http import KEY_AUTHENTICATED, KEY_HASS, HomeAssistantView
 from homeassistant.core import HomeAssistant
@@ -33,6 +34,10 @@ def valid_image_content_type(content_type: str | None) -> str:
         raise ImageContentTypeError
     return content_type
 
+def calculate_hash(value: bytes) -> str:
+    m = hashlib.sha256()
+    m.update(value)
+    return m.hexdigest()
 
 class ImmichImageView(HomeAssistantView):
     """Get all logged errors and warnings."""
@@ -78,8 +83,14 @@ class ImmichImageView(HomeAssistantView):
             image = await self._async_get_image(image_entity, asset_id, IMAGE_TIMEOUT)
         except (HomeAssistantError, ValueError) as ex:
             raise web.HTTPInternalServerError from ex
+        
+        headers = {
+            "Content-Type": image.content_type,
+            "Expires": "-1",
+            "ETag": calculate_hash(image.content),
+        }
 
-        return web.Response(body=image.content, content_type=image.content_type)
+        return web.Response(body=image.content, headers=headers)
 
     async def _async_get_image(self, image_entity: ImmichImageEntity, asset_id: str, timeout: int) -> Image:
         """Fetch image from an image entity."""
